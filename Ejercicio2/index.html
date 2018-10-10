@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>EJERCICIO 2</title>
+<!-- https://code.jquery.com/ -->
+<script src="jquery-3.1.1.min.js"></script>
+<!-- https://cdn.jsdelivr.net/npm/d3@4.13.0/build/ -->
+<script src="d3.min.js" charset="utf-8"></script>
+<!-- https://cdn.jsdelivr.net/npm/taucharts@2/dist/ -->
+<script src="taucharts.min.js" type="text/javascript"></script>
+<!-- https://cdn.jsdelivr.net/npm/taucharts@2/dist/ -->
+<link rel="stylesheet" type="text/css" href="taucharts.min.css">
+
+<style type="text/css">
+
+html {
+	  margin:20px;
+	  height:100%;
+	  font-family: verdana;
+	  font-size: 10px;
+	  background-color: #F7F7F7;
+}
+	
+body {
+	width:100%;
+	height:100%;
+	color: #444444;
+}
+
+h1 {
+	font-size: 3em;
+	color: #086198;
+}
+
+h2 {
+	font-size: 2em;
+	color: #2991C8;
+	padding-left: 10px;
+}
+
+#categorias,#agrupado {
+	width:auto;
+	height:45%;
+	border: solid 1px #AAAAAA;
+	padding: 20px;
+	padding-right: 0px;
+	margin-right: 30px;
+}
+
+#totales {
+	font-size: 1em;
+	color: #444444;
+	width:100%;
+	text-align: center;
+	margin-top: 10px;
+}
+#totales span {
+	padding: 50px;
+	padding-top: 20px;
+}
+
+#totales span:hover {
+	color: #AA2222;	
+}
+
+</style>
+
+</head>
+<body>
+<h1>Ejercicio 2</h1>
+
+<h2>Gráficas de categorías: </h2>
+<div id="categorias"></div>
+<h2>Totales categorías: </h2>
+<div id="agrupado"></div>
+<div id="totales"></div>
+
+<script>
+
+
+function ArreglaFichero(ListaDatos,elfichero,claves,testFecha) {
+	// CARGO DATOS CON INSPECCION DE FECHA Y CATEGORIA COINCIDENTES PARA LA SUMA DE LOS VALORES CORRESPONDIENTES
+
+	for (var clave in elfichero) {
+		lacategoria=elfichero[clave][claves[1]];
+		lacategoria=lacategoria.toUpperCase();
+		lafechaFile=elfichero[clave][claves[0]];
+		if (testFecha) {
+			var lafechaDate = new Date(lafechaFile);
+			var lafecha = lafechaDate.getTime();
+		} else {
+			var lafecha = lafechaFile;
+		}
+		lafecha=parseInt(lafecha);
+		elvalor=elfichero[clave][claves[2]];
+
+		existe = 0;
+		ListaDatos.map(function(obj) {(obj.categoria === lacategoria) && (obj.fecha === lafecha) && (existe = obj.valor);});
+		// Ya existe una entra con CATEGORÍA y FECHA IDÉNTICA SE DEBEN SUMAR LOS VALORES y reescribir la entrada
+		// Si no existe coincidencia se debe añadir: push
+		if (existe) {
+			elvalor=elvalor+existe;
+			ListaDatos.map(function(obj) {(obj.categoria === lacategoria) && (obj.fecha === lafecha) && (obj.valor = elvalor);});
+		} else {
+			ListaDatos.push({categoria:lacategoria,fecha:lafecha,valor:elvalor});
+		}
+
+	}
+
+	// FIN CARGA DATOS
+
+	return ListaDatos;
+} // FIN ArreglaFichero
+
+
+function ArreglaFicheroRAW(ListaDatos,elfichero,claves) {
+	// CARGO DATOS CON INSPECCION DE FECHA Y CATEGORIA COINCIDENTES PARA LA SUMA DE LOS VALORES CORRESPONDIENTES
+
+	for (var clave in elfichero) {
+		FechaMasCategoria=elfichero[clave][claves[0]];
+		elvalor = elfichero[clave][claves[1]];
+		expresion = /\d{4}-\d{2}-\d{2}/;
+		FechaHallada = FechaMasCategoria.match(expresion);
+		lafechaFile=FechaHallada[0];
+
+		// Pasamos fechas a milisegundos
+		var lafechaDate = new Date(lafechaFile);
+		var lafecha = lafechaDate.getTime();
+		lafecha=parseInt(lafecha);
+
+		testCategoria = /([^\#]*)cat (\d{1})([^\#]*)/gi;
+		CategoriaHallada = FechaMasCategoria.match(testCategoria);
+		lacategoria=CategoriaHallada[0];
+		lacategoria=lacategoria.toUpperCase();
+
+		elvalor=elfichero[clave][claves[1]];
+
+		existe = 0;
+		ListaDatos.map(function(obj) {(obj.categoria === lacategoria) && (obj.fecha === lafecha) && (existe = obj.valor);});
+		// Ya existe una entra con CATEGORÍA y FECHA IDÉNTICA SE DEBEN SUMAR LOS VALORES y reescribir la entrada
+		// Si no existe coincidencia se debe añadir: push
+		if (existe) {
+			elvalor=elvalor+existe;
+			ListaDatos.map(function(obj) {(obj.categoria === lacategoria) && (obj.fecha === lafecha) && (obj.valor = elvalor);});
+		} else {
+			ListaDatos.push({categoria:lacategoria,fecha:lafecha,valor:elvalor});
+		}
+	}
+
+	// FIN CARGA DATOS
+
+	return ListaDatos;
+} // FIN ArreglaFicheroRAW
+
+	// RECUPERACIÓN FICHEROS JSON
+	
+	url2get="http://s3.amazonaws.com/logtrust-static/test/test/data1.json";
+	fitxer1=$.ajax({type: "GET", url: url2get, async: false}).responseText
+	var datos1 = JSON.parse(fitxer1);
+
+	url2get="http://s3.amazonaws.com/logtrust-static/test/test/data2.json";
+	fitxer2=$.ajax({type: "GET", url: url2get, async: false}).responseText
+	var datos2 = JSON.parse(fitxer2);
+
+	url2get="http://s3.amazonaws.com/logtrust-static/test/test/data3.json";
+	fitxer3=$.ajax({type: "GET", url: url2get, async: false}).responseText
+	var datos3 = JSON.parse(fitxer3);
+
+	var ListaDatos = []; 	// definicion var ListaDatos = [{categoria,fecha,valor}]
+	var TotalesTodasLasCates = [];
+
+
+	// PROCESAMOS FICHEROS Y UNIMOS TODOS LOS REGISTROS ListaDatos !!!
+
+	lasclaves=["d","cat","value"];
+	ListaDatos = ArreglaFichero(ListaDatos,datos1,lasclaves,0);
+
+	lasclaves=["myDate","categ","val"];
+	ListaDatos = ArreglaFichero(ListaDatos,datos2,lasclaves,1);
+
+	lasclaves=["raw","val"];
+	ListaDatos = ArreglaFicheroRAW(ListaDatos,datos3,lasclaves);
+
+
+function CambiaFecha (x) {
+	// FECHA FORMATO YYYY/MM/DD
+	d = new Date(x);
+
+	let month = String(d.getMonth() + 1);
+	let day = String(d.getDate());
+	const year = String(d.getFullYear());
+
+	if (month.length < 2) month = '0' + month;
+	if (day.length < 2) day = '0' + day;
+	Fechafinal = `${year}/${month}/${day}`;
+
+	return Fechafinal;
+
+}
+
+
+function TriaDatesCate(DadesTotals,CateKey) {
+	var NovaTerna = [];
+	for (var elobj in ListaDatos) {
+		LaFechaNova=ListaDatos[elobj].fecha; // FECHA FORMATO YYYY/MM/DD
+		CatagoriaTrobada=ListaDatos[elobj].categoria;
+		ValorEncontrado=ListaDatos[elobj].valor;
+		if (CatagoriaTrobada==CateKey) {
+			NovaTerna.push({ categoria:CatagoriaTrobada, fecha:LaFechaNova, valor:ValorEncontrado });
+		}
+	}
+
+	return NovaTerna;
+}
+
+function ladata(ListaDatos) {
+	// PREPARAMOS LA INFORMACIÓN PARA LAS HIGHCHARTS
+	// FORMATEAMOS FECHA
+	// CONTAMOS TOTALES DE LAS CATEGORÍAS EXISTENTES LAS QUE SEAN
+	arr = [];
+	existe = new Object();
+
+	for (var elobj in ListaDatos) {
+		LaFechaNova=CambiaFecha (ListaDatos[elobj].fecha); // FECHA FORMATO YYYY/MM/DD
+		CatagoriaTrobada=ListaDatos[elobj].categoria;
+		ValorEncontrado=ListaDatos[elobj].valor;
+		arr.push({ categoria:CatagoriaTrobada, fecha:LaFechaNova, valor:ValorEncontrado });
+
+		// Monta objeto con las N categorias y las suma total de los valores de las mismas al margen de su fecha
+		// Este objeto se usara para el HighChart de los totales de las categorías
+		var results = TotalesTodasLasCates.filter(function (elobj) { return elobj.categoria === CatagoriaTrobada; });
+		var LasCates = (results.length > 0) ? results[0] : null;
+		if (LasCates != null) {
+			// SI YA EXISTE ESA CATEGORIA SUMO EL VALOR AL EXISTENTE
+			sumadevalores=LasCates.valortotal+ValorEncontrado;
+			TotalesTodasLasCates.map(function(elobjeto) {(elobjeto.categoria === CatagoriaTrobada) && (elobjeto.valortotal = sumadevalores);});
+		} else {
+			// SI NO EXISTE LA CATEGORIA CREO LA CATEGORIACON LOS VALOR ENCONTRADOS
+			TotalesTodasLasCates.push({categoria:CatagoriaTrobada,valortotal:ValorEncontrado});			
+		}
+	}
+
+	return arr;
+}
+
+function ClavesUnicas(arr, prop){
+	// DEVUELVE TERNA CON CLAVES ÚNICA INDICADAS
+	return arr.reduce((a, d) => {
+		if (!a.includes(d[prop])) { a.push(d[prop]); }
+		return a;
+	}, []);
+}
+
+var laCatesReals = ClavesUnicas(ListaDatos, "categoria");
+
+ListaDatos.sort(function (a, b) { return a.fecha - b.fecha; }); // Ordenamos por fecha !!!
+var LlistaDades = [];
+var datosTotales = [];
+
+for (j=1; j<=laCatesReals.length;j++){
+	LlistaDades[j-1]=TriaDatesCate(ListaDatos,"CAT "+j);	// agrupamos por las categorías existentes
+	datosTotales = datosTotales.concat(LlistaDades[j-1]);	// concatenamos los grupos, array de objetos único
+}
+
+// PREPARAMOS LA INFORMACIÓN PARA LAS HIGHCHARTS
+// FORMATEAMOS FECHA
+// CONTAMOS TOTALES DE LAS CATEGORÍAS EXISTENTES LAS QUE SEAN
+
+arr=ladata(datosTotales);
+
+TotalesTodasLasCates.sort(function (a, b){ return (a.categoria.replace("CAT ","") - b.categoria.replace("CAT ","")) }); // Ordenamos por categoria antes de crear 
+
+
+// CREO COLORES POR CATEGORIA "ALEATORIAMENTE" PARA: color -> brewer 
+
+coloresCAT = new Object();
+for (j=1; j<=TotalesTodasLasCates.length;j++){
+	var colorHEX = Math.random().toString(16).slice(-6)
+	colorHEX = colorHEX.replace("f", "a"); // Evito colores claros para verse bien sobre blanco
+	coloresCAT["CAT "+j]='#'+colorHEX;
+}
+
+// HIGHCHARTS CATEGORIES
+
+new Taucharts.Chart({
+    data: arr,
+    type: 'line',
+    x: "fecha",
+    y: "valor",
+    color: 'categoria',
+    guide: {
+    	showGridLines:'xy',
+        x: { label: { text: 'Fechas' } },
+        y: { label: { text: 'Valor' }  },
+        color: { brewer: coloresCAT, label: { text: 'CATEGORÍAS' } },
+        showAnchors: 'always',
+        interpolate: 'linear'
+    },
+    plugins: [
+        Taucharts.api.plugins.get('legend')({position: 'right'}),
+        Taucharts.api.plugins.get('tooltip')()
+    ]    
+}).renderTo('#categorias');
+
+// HIGHCHARTS TOTALS
+
+var chart = new Taucharts.Chart({
+    data: TotalesTodasLasCates,
+    type: 'bar',
+    x: 'categoria',
+    y: 'valortotal',
+    color: 'categoria',
+    guide: {
+        x: { label: { text: 'Categorías' } },
+        y: { label: { text: 'Totales' }  },
+        color: { brewer: coloresCAT, label: { text: 'CATEGORÍAS' } },
+        showAnchors: 'always',
+        interpolate: 'linear'
+    },
+    plugins: [
+        Taucharts.api.plugins.get('legend')(),
+        Taucharts.api.plugins.get('tooltip')()
+    ]    
+        });
+chart.renderTo('#agrupado');
+
+DivTotales="";
+DivTotales+="<br />Totales Categorías: ";
+for (j=0; j<TotalesTodasLasCates.length;j++){
+	DivTotales+="<span title=" + TotalesTodasLasCates[j].valortotal + ">"+ TotalesTodasLasCates[j].categoria + " = " + TotalesTodasLasCates[j].valortotal.toFixed(3) + "</span> ";
+}
+DivTotales+="<br /><br /><br />";
+
+
+
+document.getElementById("totales").innerHTML = DivTotales;
+
+
+</script>
+
+</body>
+</html>
